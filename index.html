@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Household builder</title>
+        <style>
+            .debug {
+                font-family: monospace;
+                border: 1px solid black;
+                padding: 10px;
+                display: none;
+            }
+			table {
+				border-collapse: collapse;
+			}
+
+			td, th {
+				border: 1px solid #999;
+				padding: 0.5rem;
+				text-align: left;
+			}
+        </style>		
+    </head> 
+	
+    <body>
+        <h1>Household builder</h1>
+        <div class="builder">
+            <ol class="household"></ol>
+            <form action="" method="POST" id="myForm" onsubmit="return beforeSubmit();">
+                <div>
+                    <label>Age
+                        <input id="age" type="text" name="age">
+                    </label>
+                </div>
+                <div>
+                    <label>Relationship
+                        <select id="relation" name="rel">
+                            <option value="">---</option>
+                            <option value="self">Self</option>
+                            <option value="spouse">Spouse</option>
+                            <option value="child">Child</option>
+                            <option value="parent">Parent</option>
+                            <option value="grandparent">Grandparent</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </label>
+                </div>
+                <div>
+                    <label>Smoker?
+                        <input id="smoker" type="checkbox" name="smoker">
+                    </label>
+                </div>
+                <div>
+                    <button class="add"  type="button" onclick="addRecord()">Add</button>
+                </div>
+				 <div>
+                    <button type="button" onclick="removeRecord()">Remove</button>
+                </div>
+                <div>
+                    <button type="submit"> Submit</button>
+                </div>
+            </form>
+        </div>
+        <pre id="debugId" class="debug">
+		<table id="table">
+			<tr>
+				<th>Age</th>
+				<th>Relationship</th>
+				<th>Smoker</th>
+			</tr>
+		</table>
+		</pre>
+		
+        <script type="text/javascript">
+			var error_str = "";
+			var members = [];
+			
+		//validateForm method validates the values that were entered in the form.
+			function validateForm(age,relation,smoker){
+			    var error = 0;
+				var flag = 0;
+				if(age === ""){														//Checks if age field is empty
+					error++;
+					error_str = error_str + "Please enter age\n";
+					flag++;
+				}else if(isNaN(age)){												//Checks whether age value is a number or not
+					error++;
+					error_str = error_str + "Age should be a number\n";
+					flag++;
+				}else if(age <= 0){													//Checks whether age is greater than 0 or not
+					error++;
+					error_str = error_str + "Age must be greater than 0\n";
+					flag++;
+				}else{
+					document.getElementById("relation").focus();
+				}
+				if(relation === ""){												//Checks whether relationship is selected or not
+					error++;
+					error_str = error_str + "Please select the relationship\n";					
+				}
+		
+				if(error > 0){														//Display the user if there is any error
+					alert("\n" + error_str + "\n");
+					error_str = "";
+					if(flag > 0){
+						document.getElementById("age").value = "";
+						document.getElementById("age").focus();
+					}
+					return false;
+				}else{
+					return true;
+				}
+			}
+		
+		//addRecord method adds the member to the members array and is displayed to the user
+			function addRecord(){
+				var age = document.getElementById("age").value;
+				var rel = document.getElementById("relation");
+				var relation = rel.options[rel.selectedIndex].value;
+				var smoker = document.getElementById("smoker").checked;
+
+				if(smoker === true){
+					smoker = "Smoker";
+				}else{
+					smoker = "Non-Smoker";
+				}
+				if(!validateForm(age,relation,smoker)){				//validateForm() is called. If it returns false it will clear all fields and stop proceeding.If it returns true it proceed to create the new member
+					return;
+				}
+				
+				var member = new person(age, relation, smoker);		//New member is created
+			
+				if(member.Relation === "self"){						//Allows only one self to be added to the list. You can add any number of other relations
+					for(var i=0; i<members.length; i++){
+						var myObj = members[i];
+						if(myObj.Relation === "self"){
+							alert("You are already added. Please add any other member");
+							clearForm();
+							return false;
+						}
+					}
+				}
+				
+				members.push(member);
+				if(member.Relation == "self"){
+					alert("You are added successfully");
+				}else{
+					alert(member.Relation + ' added successfully.');
+				}
+				displayJSONObjects(members);						//Displays all the added members to the user
+				clearForm();
+			}
+
+		//ClearForm method clears the form.
+			function clearForm(){
+				document.getElementById("myForm").reset();
+				document.getElementById("age").focus();
+			}
+		
+		//removeRecord method removes the last entered member from the array and displays the updated list to the user.
+			function removeRecord(){
+       		    if(members.length>0)
+			    {
+					var mem = members[members.length-1].Relation;
+			 	    members.pop();
+					if(members.length>0){
+						alert(mem + ' is removed successfully.');
+						displayJSONObjects(members);
+					}else{
+						document.getElementById("debugId").style.display = "none";
+						alert(mem + " removed successfully and there are no more members");
+					}
+			    }else{
+				    alert('There are no members');
+			    }
+				clearForm();		
+			}
+			
+		/*When the Submit button is clicked, members array is converted to JSON and is displayed to the user. After that JSON data is 
+		  sent to the server through ajax call */
+		  	function beforeSubmit(){
+				if(members.length > 0){
+					alert('Your data is saved successfully.');
+					var jsonData = JSON.stringify(members);								//Serialize the array to JSON 
+					
+			/*	    Seiralized json data (jsonData) will be send to backend server through ajax call;
+				    var xmlhttp = new XMLHttpRequest();   								// new HttpRequest instance 
+				    xmlhttp.open("POST", "/fakeUrl.php");
+					xmlhttp.setRequestHeader("Content-Type", "application/json");
+					xmlhttp.send(jsonData);
+					we can catch the response from the server here and  can disply that accordingly in the UI.   
+					Here we can directly submit the form instead of ajax if we want.  
+			*/
+				    members = [];														//Clears the members array after submitting the data
+					clearForm();
+				}else{
+					alert('No member is added for submission');
+			    }
+			return false;   
+			}
+		
+		//displayJSONObjects method displays the JSON object on the UI
+			function displayJSONObjects(members){
+				var table = document.getElementById("table");
+				var debug = document.getElementById("debugId");
+								
+				while(table.rows.length > 1) {											//Removes the records if any 
+					table.deleteRow(1);
+				}
+				for (var i = 0; i < members.length; i++) {								//Creates the table contents with members
+					var row = table.insertRow(-1);
+					var ageCell = row.insertCell(-1);
+					ageCell.appendChild(document.createTextNode(members[i].Age));
+					var relationCell = row.insertCell(-1);
+					relationCell.appendChild(document.createTextNode(members[i].Relation));
+					var smokerCell = row.insertCell(-1);
+					smokerCell.appendChild(document.createTextNode(members[i].Smoke));
+				}
+				debug.style.display = 'block';
+				debug.appendChild(table);												
+			}
+			
+		//person object creates an object for an entry everytime the user hits the add button.
+			var person = function(age, relation, smoke){
+				this.Age = age;
+				this.Relation = relation;
+				this.Smoke = smoke;
+			}
+			
+		</script>
+    </body>
+</html>

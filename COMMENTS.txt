@@ -1,0 +1,7 @@
+As per rule# 4 in the tasks(display data as it is modified i.e add/delete), member will be displayed when he/she is added to the list. Rule# 3 in Notes(Display data on submission) conflicted with
+this but followed the prior one.there is an update
+
+
+Once the user clicks the submit button and tries to do any actions he will be treated as a new user though the previous
+user's data is displayed on the screen. It is updated when the user performs any actions.
+
